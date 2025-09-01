@@ -1,0 +1,115 @@
+import time
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+
+PAUSINHA = 1.0
+PAUSONA = 2.0
+
+URL_BASE = "https://the-internet.herokuapp.com/login"
+USUARIO_VALIDO = "tomsmith"
+SENHA_VALIDA = "SuperSecretPassword!"
+SENHA_INVALIDA = "senha_errada"
+
+# -------------------- TESTE FLUXO POSITIVO: --------------------
+def teste_positivo(driver):
+    print("\n--- INICIANDO TESTE DO FLUXO POSITIVO ---")
+    try:
+        driver.get(URL_BASE)
+        time.sleep(PAUSONA)
+
+        # preencher usuario e senha
+        driver.find_element(By.ID, "username").send_keys(USUARIO_VALIDO)
+        time.sleep(PAUSINHA)
+        driver.find_element(By.ID, "password").send_keys(SENHA_VALIDA)
+        time.sleep(PAUSINHA)
+
+        # clicar no botao de login
+        driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
+        time.sleep(PAUSONA)
+
+        # verificar se foi direcionado certinho ou nao
+        if "/secure" not in driver.current_url:
+            print("❌ Falha: Não foi redirecionado para a página /secure.")
+            return False
+
+        print("✅ Login válido detectado.")
+        time.sleep(PAUSINHA)
+
+        # efetuar logout
+        driver.find_element(By.CSS_SELECTOR, "a.button[href='/logout']").click()
+        time.sleep(PAUSONA)
+
+        # ver se voltou ou nao para a pagina de login
+        if URL_BASE in driver.current_url:
+            print("✅ Logout bem-sucedido. Retornou à tela de login.")
+            return True
+        else:
+            print("❌ Falha no logout: Não retornou à tela de login.")
+            return False
+
+    except Exception as e:
+        print("❌ Exceção no fluxo positivo:", e)
+        return False
+
+# -------------------- TESTE FLUXO NEGATIVO: --------------------
+def teste_negativo(driver):
+    print("\n--- INICIANDO TESTE DO FLUXO NEGATIVO ---")
+    try:
+        driver.get(URL_BASE)
+        time.sleep(PAUSONA)
+
+        # Preencher usuario valido e senha invalida
+        driver.find_element(By.ID, "username").send_keys(USUARIO_VALIDO)
+        time.sleep(PAUSINHA)
+        driver.find_element(By.ID, "password").send_keys(SENHA_INVALIDA)
+        time.sleep(PAUSINHA)
+
+        # Clicar no botao de login
+        driver.find_element(By.CSS_SELECTOR, "button[type='submit']").click()
+        time.sleep(PAUSONA)
+
+        # Verificar se a mensagem de erro apareceu
+        # O elemento da mensagem tem id="flash" e a classe "error"
+        mensagem_erro_elemento = driver.find_element(By.CSS_SELECTOR, "div#flash.error")
+        
+        mensagem_erro_texto = mensagem_erro_elemento.text
+        
+        if "Your username is invalid!" in mensagem_erro_texto: # A mensagem na verdade diz que o usuário é inválido
+            print(f"✅ Teste negativo bem-sucedido. Mensagem de erro exibida: '{mensagem_erro_texto.strip()}'")
+            return True
+        else:
+            print(f"❌ Falha no teste negativo: Mensagem de erro inesperada ou não encontrada.")
+            return False
+
+    except Exception as e:
+        print("❌ Exceção no fluxo negativo:", e)
+        return False
+
+# -------------------- EXECUÇÃO DOS TESTES --------------------
+if __name__ == "__main__":
+    options = Options()
+    
+    # 1. Desabilita a interface gráfica que pergunta se você quer salvar a senha
+    options.add_argument("--disable-features=PasswordLeakDetection")
+    
+    # 2. Desabilita o gerenciador de credenciais e o gerenciador de senhas do perfil
+    prefs = {
+        "credentials_enable_service": False,
+        "profile.password_manager_enabled": False
+    }
+    options.add_experimental_option("prefs", prefs)
+    
+    driver = webdriver.Chrome(options=options)
+
+    try:
+        # Executar os testes
+        resultado_positivo = teste_positivo(driver)
+        resultado_negativo = teste_negativo(driver)
+
+        print("\n--- FIM DOS TESTES ---")
+        print(f"Resultado do Fluxo Positivo: {'SUCESSO' if resultado_positivo else 'FALHA'}")
+        print(f"Resultado do Fluxo Negativo: {'SUCESSO' if resultado_negativo else 'FALHA'}")
+
+    finally:
+        driver.quit()
