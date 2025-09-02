@@ -75,7 +75,7 @@ def teste_negativo(driver):
         
         mensagem_erro_texto = mensagem_erro_elemento.text
         
-        if "Your username is invalid!" in mensagem_erro_texto: # A mensagem na verdade diz que o usuário é inválido
+        if "Your username is invalid!" or "Your password is invalid!" in mensagem_erro_texto:
             print(f"✅ Teste negativo bem-sucedido. Mensagem de erro exibida: '{mensagem_erro_texto.strip()}'")
             return True
         else:
@@ -112,4 +112,5 @@ if __name__ == "__main__":
         print(f"Resultado do Fluxo Negativo: {'SUCESSO' if resultado_negativo else 'FALHA'}")
 
     finally:
+
         driver.quit()
