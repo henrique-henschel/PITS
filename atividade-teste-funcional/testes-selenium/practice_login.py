@@ -31,14 +31,12 @@ def teste_fluxo_positivo(driver) -> bool:
         if "/logged-in-successfully" not in driver.current_url:
             print("❌ Falha: Não foi redirecionado para a página de quando o login eh bem-sucedido")
             return False
-        
         print("✅ Login válido detectado.")
         esperar()
 
         # efetuar logout
         driver.find_element(By.LINK_TEXT, "Log out").click()
         esperar()
-
         # ver se voltou ou nao para a pagina de login (fez o logout ou nao)
         if URL_BASE in driver.current_url:
             print("✅ Logout bem-sucedido. Retornou à tela de login.")
@@ -51,7 +49,7 @@ def teste_fluxo_positivo(driver) -> bool:
         print("❌ Exceção no fluxo positivo:", e)
         return False
 
-def teste_fluxo_negativo(driver):
+def teste_fluxo_negativo(driver) -> bool:
     print("\n--- INICIANDO TESTE DO FLUXO NEGATIVO ---")
     try:
         driver.get(URL_BASE)
@@ -65,7 +63,14 @@ def teste_fluxo_negativo(driver):
         esperar()
         # clicar no botao de login
         driver.find_element(By.ID, "submit").click()
-        esperar()      
+        esperar()
+
+        # verificar se a mensagem de erro apareceu
+        div_erro = driver.find_element(By.ID, "error")
+        if "Your password is invalid!" or "Your username is invalid!" in div_erro.text:
+            return True
+        else:
+            return False
 
     except Exception as e:
         print("❌ Exceção no fluxo positivo:", e)
@@ -73,27 +78,24 @@ def teste_fluxo_negativo(driver):
 
 if __name__ == "__main__":
     options = Options()
-    
     # 1. Desabilita a interface gráfica que pergunta se você quer salvar a senha
     options.add_argument("--disable-features=PasswordLeakDetection")
-    
     # 2. Desabilita o gerenciador de credenciais e o gerenciador de senhas do perfil
     prefs = {
         "credentials_enable_service": False,
         "profile.password_manager_enabled": False
     }
     options.add_experimental_option("prefs", prefs)
-    
     driver = webdriver.Chrome(options=options)
 
     try:
         # Executar os testes
         resultado_positivo = teste_fluxo_positivo(driver)
-        #resultado_negativo = teste_fluxo_erro(driver)
+        resultado_negativo = teste_fluxo_negativo(driver)
 
         print("\n--- FIM DOS TESTES ---")
         print(f"Resultado do Fluxo Positivo: {'SUCESSO' if resultado_positivo else 'FALHA'}")
-        #print(f"Resultado do Fluxo Negativo: {'SUCESSO' if resultado_negativo else 'FALHA'}")
+        print(f"Resultado do Fluxo Negativo: {'SUCESSO' if resultado_negativo else 'FALHA'}")
 
     finally:
         driver.quit()

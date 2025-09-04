@@ -4,13 +4,13 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 
-PAUSINHA = 1.0
-PAUSONA = 2.0
-
 URL_BASE = "https://www.saucedemo.com/"
 USUARIO_VALIDO = "standard_user"
 SENHA_VALIDA = "secret_sauce"
 SENHA_INVALIDA = "senha_errada"
+
+def esperar() -> None:
+    time.sleep(3.0)
 
 # -------------------- CRIAR/INICIALIZAR O DRIVER: --------------------
 def make_driver(headless=False):
@@ -18,39 +18,35 @@ def make_driver(headless=False):
     if headless:
         opts.add_argument("--headless=new")
     opts.add_argument("--window-size=1366,900")
-    # iniciar Chrome (Selenium Manager cuida do driver)
     driver = webdriver.Chrome(options=opts)
     return driver
 
 # -------------------- TESTE FLUXO POSITIVO: --------------------
-def teste_positivo(driver):
+def teste_positivo(driver) -> bool:
     try:
         driver.get(URL_BASE)
-        time.sleep(PAUSONA)
+        esperar()
 
-        # preencher usuario e senha
+        # preencher usuario e senha corretos
         driver.find_element(By.ID, "user-name").send_keys(USUARIO_VALIDO)
-        time.sleep(PAUSINHA)
+        esperar()
         driver.find_element(By.ID, "password").send_keys(SENHA_VALIDA)
-        time.sleep(PAUSINHA)
-
+        esperar()
         # clicar no botao de login
         driver.find_element(By.ID, "login-button").click()
-        time.sleep(PAUSONA)  # esperar carregar a pagina de inventario
+        esperar()  # esperar carregar a pagina de inventario
 
-        # verificar se URL contem "inventory" (indicador simples)
+        # verificar se URL contem "inventory"
         if "inventory" not in driver.current_url:
             print("❌ Falha: não entrou na página de inventário.")
             return False
-
         print("✅ Login válido detectado.")
 
         # efetuar logout (abrir menu e clicar logout)
         driver.find_element(By.ID, "react-burger-menu-btn").click()
-        time.sleep(PAUSINHA)
+        esperar()
         driver.find_element(By.ID, "logout_sidebar_link").click()
-        time.sleep(PAUSONA)
-
+        esperar()
         # ver se voltou ou nao para a pagina de login
         try:
             driver.find_element(By.ID, "login-button")
@@ -65,23 +61,22 @@ def teste_positivo(driver):
         return False
     
 # -------------------- TESTE FLUXO NEGATIVO: --------------------
-def teste_negativo(driver):
+def teste_negativo(driver) -> bool:
     try:
         driver.get(URL_BASE)
-        time.sleep(PAUSONA)
+        esperar()
 
         driver.find_element(By.ID, "user-name").send_keys(USUARIO_VALIDO)
-        time.sleep(PAUSINHA)
+        esperar()
         driver.find_element(By.ID, "password").send_keys(SENHA_INVALIDA)
-        time.sleep(PAUSINHA)
+        esperar()
         driver.find_element(By.ID, "login-button").click()
-
         # aguardar resposta
-        time.sleep(PAUSONA)
+        esperar()
 
-        # tentar capturar a mensagem de erro (SauceDemo usa data-test="error")
+        # tentar capturar a mensagem de erro
         try:
-            erro = driver.find_element(By.CLASS_NAME, "error-message-container error").text.strip()
+            erro = driver.find_element(By.LINK_TEXT, "Epic sadface: Username and password do not match any user in this service")
             if erro:
                 print("✅ Mensagem de erro detectada:", erro)
                 return True

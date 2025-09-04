@@ -17,10 +17,10 @@ def teste_fluxo_alvo(driver) -> bool:
         driver.get(URL_BASE)
         esperar()
 
-        # preencher usuario
+        # preencher usuario (correto)
         driver.find_element(By.NAME, "username").send_keys(USUARIO_VALIDO)
         esperar()
-        # preencher senha
+        # preencher senha (correta)
         driver.find_element(By.NAME, "password").send_keys(SENHA_VALIDA)
         esperar()
         # clicar no botao de login
@@ -31,7 +31,6 @@ def teste_fluxo_alvo(driver) -> bool:
         if "dashboard/index" not in driver.current_url:
             print("❌ Falha: Não foi redirecionado para a página de quando o login eh bem-sucedido")
             return False
-        
         print("✅ Login válido detectado.")
         esperar()
 
@@ -40,7 +39,6 @@ def teste_fluxo_alvo(driver) -> bool:
         esperar()
         driver.find_element(By.LINK_TEXT, "Logout").click()
         esperar()
-
         # ver se voltou ou nao para a pagina de login
         if URL_BASE in driver.current_url:
             print("✅ Logout bem-sucedido. Retornou à tela de login.")
@@ -59,10 +57,10 @@ def teste_fluxo_erro(driver) -> bool:
         driver.get(URL_BASE)
         esperar()
 
-        # preencher usuario
+        # preencher usuario (correto)
         driver.find_element(By.NAME, "username").send_keys(USUARIO_VALIDO)
         esperar()
-        # preencher senha errado
+        # preencher senha errada
         driver.find_element(By.NAME, "password").send_keys(SENHA_INVALIDA)
         esperar()
         # clicar no botao de login
@@ -82,17 +80,14 @@ def teste_fluxo_erro(driver) -> bool:
     
 if __name__ == "__main__":
     options = Options()
-    
     # 1. Desabilita a interface gráfica que pergunta se você quer salvar a senha
     options.add_argument("--disable-features=PasswordLeakDetection")
-    
     # 2. Desabilita o gerenciador de credenciais e o gerenciador de senhas do perfil
     prefs = {
         "credentials_enable_service": False,
         "profile.password_manager_enabled": False
     }
     options.add_experimental_option("prefs", prefs)
-    
     driver = webdriver.Chrome(options=options)
 
     try:
