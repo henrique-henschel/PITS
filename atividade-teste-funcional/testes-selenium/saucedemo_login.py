@@ -74,17 +74,15 @@ def teste_negativo(driver) -> bool:
         # aguardar resposta
         esperar()
 
-        # tentar capturar a mensagem de erro
-        try:
-            erro = driver.find_element(By.LINK_TEXT, "Epic sadface: Username and password do not match any user in this service")
-            if erro:
-                print("✅ Mensagem de erro detectada:", erro)
-                return True
-            else:
-                print("❌ Mensagem de erro vazia.")
-                return False
-        except Exception:
-            print("❌ Não encontrou a mensagem de erro.")
+        # tentar localizar o elemento <h3> que exibe a mensagem de erro
+        elemento_erro = driver.find_element(By.CSS_SELECTOR, '[data-test="error"]')
+        if "Epic sadface: Username and password do not match any user in this service" in elemento_erro.text:
+            print(f"✅ SUCESSO: Teste de fluxo negativo concluído com sucesso.")
+            print(f"   Mensagem de erro exibida: '{elemento_erro.text}'")
+            return True
+        else:
+            print(f"❌ FALHA: A mensagem de erro exibida é diferente do esperado.")
+            print(f"   Mensagem encontrada: '{elemento_erro.text}'")
             return False
 
     except Exception as e:
