@@ -3,6 +3,9 @@ import argparse
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 URL_BASE = "https://www.saucedemo.com/"
 USUARIO_VALIDO = "standard_user"
@@ -21,39 +24,48 @@ def make_driver(headless=False):
     driver = webdriver.Chrome(options=opts)
     return driver
 
+def _wait_present(driver, by, locator, timeout=10):
+    return WebDriverWait(driver, timeout).until(EC.presence_of_element_located((by, locator)))
+
 # -------------------- TESTE FLUXO POSITIVO: --------------------
 def teste_positivo(driver) -> bool:
     try:
         driver.get(URL_BASE)
         esperar()
 
-        # preencher usuario e senha corretos
-        driver.find_element(By.ID, "user-name").send_keys(USUARIO_VALIDO)
+        _wait_present(driver, By.ID, "user-name").send_keys(USUARIO_VALIDO)
         esperar()
-        driver.find_element(By.ID, "password").send_keys(SENHA_VALIDA)
+        _wait_present(driver, By.ID, "password").send_keys(SENHA_VALIDA)
         esperar()
-        # clicar no botao de login
-        driver.find_element(By.ID, "login-button").click()
-        esperar()  # esperar carregar a pagina de inventario
+        _wait_present(driver, By.ID, "login-button").click()
+        esperar()
 
         # verificar se URL contem "inventory"
-        if "inventory" not in driver.current_url:
+        try:
+            WebDriverWait(driver, 10).until(EC.url_contains("inventory"))
+        except TimeoutException:
             print("❌ Falha: não entrou na página de inventário.")
             return False
         print("✅ Login válido detectado.")
 
         # efetuar logout (abrir menu e clicar logout)
-        driver.find_element(By.ID, "react-burger-menu-btn").click()
         esperar()
-        driver.find_element(By.ID, "logout_sidebar_link").click()
-        esperar()
-        # ver se voltou ou nao para a pagina de login
         try:
-            driver.find_element(By.ID, "login-button")
+            _wait_present(driver, By.ID, "react-burger-menu-btn").click()
+            esperar()
+            _wait_present(driver, By.ID, "logout_sidebar_link").click()
+        except (NoSuchElementException, TimeoutException):
+            print("❌ Falha no logout ou elementos do menu não encontrados.")
+            return False
+        
+        # ver se voltou ou nao para a pagina de login
+        esperar()
+        try:
+            _wait_present(driver, By.ID, "login-button", timeout=10)
             print("✅ Logout confirmado. Voltou à tela de login.")
             return True
-        except Exception:
-            print("❌ Falha no logout ou não voltou à tela de login.")
+        except TimeoutException:
+            print("❌ Falha no logout: botão de login não encontrado após logout.")
             return False
 
     except Exception as e:
@@ -64,25 +76,29 @@ def teste_positivo(driver) -> bool:
 def teste_negativo(driver) -> bool:
     try:
         driver.get(URL_BASE)
+        _wait_present(driver, By.ID, "user-name").send_keys(USUARIO_VALIDO)
         esperar()
-
-        driver.find_element(By.ID, "user-name").send_keys(USUARIO_VALIDO)
+        _wait_present(driver, By.ID, "password").send_keys(SENHA_INVALIDA)
         esperar()
-        driver.find_element(By.ID, "password").send_keys(SENHA_INVALIDA)
-        esperar()
-        driver.find_element(By.ID, "login-button").click()
-        # aguardar resposta
+        _wait_present(driver, By.ID, "login-button").click()
         esperar()
 
         # tentar localizar o elemento <h3> que exibe a mensagem de erro
-        elemento_erro = driver.find_element(By.CSS_SELECTOR, '[data-test="error"]')
-        if "Epic sadface: Username and password do not match any user in this service" in elemento_erro.text:
-            print(f"✅ SUCESSO: Teste de fluxo negativo concluído com sucesso.")
-            print(f"   Mensagem de erro exibida: '{elemento_erro.text}'")
-            return True
-        else:
-            print(f"❌ FALHA: A mensagem de erro exibida é diferente do esperado.")
-            print(f"   Mensagem encontrada: '{elemento_erro.text}'")
+        try:
+            elemento_erro = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '[data-test="error"]'))
+            )
+            expected = "Epic sadface: Username and password do not match any user in this service"
+            if expected in elemento_erro.text:
+                print("✅ SUCESSO: Teste de fluxo negativo concluído com sucesso.")
+                print(f"   Mensagem de erro exibida: '{elemento_erro.text}'")
+                return True
+            else:
+                print("❌ FALHA: A mensagem de erro exibida é diferente do esperado.")
+                print(f"   Mensagem encontrada: '{elemento_erro.text}'")
+                return False
+        except TimeoutException:
+            print("❌ FALHA: mensagem de erro não exibida no tempo esperado.")
             return False
 
     except Exception as e:
