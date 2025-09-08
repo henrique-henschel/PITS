@@ -1,3 +1,0 @@
-> pip install playwright
-> playwright install
-> playwright codegen <url_base>
